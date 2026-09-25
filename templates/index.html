@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScoopBot - Ice Cream Chatbot</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #ec4899, #fbbf24);
+    }
+
+    .chat-container {
+        width: 420px;
+        max-width: 95vw;
+        height: 640px;
+        background: #ffffff;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .chat-header {
+        background: #ec4899;
+        color: #fff;
+        padding: 16px 20px;
+        text-align: center;
+    }
+
+    .chat-header h1 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .chat-header p {
+        font-size: 12px;
+        opacity: 0.85;
+        margin-top: 2px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #fff5f8;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        background: #ec4899;
+        color: #fff;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.bot {
+        align-self: flex-start;
+        background: #fde2ee;
+        color: #5a1a3a;
+        border-bottom-left-radius: 4px;
+    }
+
+    .message.typing {
+        align-self: flex-start;
+        background: #fde2ee;
+        color: #b06a8f;
+        font-style: italic;
+    }
+
+    .chat-input {
+        display: flex;
+        border-top: 1px solid #e5e7eb;
+        padding: 10px;
+        gap: 8px;
+        background: #fff;
+    }
+
+    .chat-input input {
+        flex: 1;
+        border: 1px solid #d1d5db;
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .chat-input input:focus {
+        border-color: #ec4899;
+    }
+
+    .chat-input button {
+        background: #ec4899;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .chat-input button:hover {
+        background: #db2777;
+    }
+
+    .chat-input button:disabled {
+        background: #f3a8cb;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>🍦 ScoopBot</h1>
+        <p>Ask me anything about ice cream</p>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+            Hi! I'm ScoopBot. Ask me about ice cream flavors, recipes, brands, toppings, or fun facts!
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Type your question..." autocomplete="off">
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById("chatMessages");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function addMessage(text, sender) {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("message", sender);
+        msgDiv.textContent = text;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return msgDiv;
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, "user");
+        userInput.value = "";
+        sendBtn.disabled = true;
+
+        const typingDiv = addMessage("ScoopBot is typing...", "typing");
+
+        try {
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await res.json();
+            typingDiv.remove();
+            addMessage(data.reply, "bot");
+        } catch (err) {
+            typingDiv.remove();
+            addMessage("Error: could not reach the server.", "bot");
+        } finally {
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>
